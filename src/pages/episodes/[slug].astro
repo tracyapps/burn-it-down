@@ -1,0 +1,659 @@
+---
+import {
+	getEmDashEntry,
+	getEmDashCollection,
+	getEntryTerms,
+	getSeoMeta,
+	decodeSlug,
+	getSiteSettings,
+} from "emdash";
+import { Image, PortableText, Comments, CommentForm } from "emdash/ui";
+import Base from "../../layouts/Base.astro";
+import EpisodeCard from "../../components/EpisodeCard.astro";
+import PatreonBanner from "../../components/PatreonBanner.astro";
+import { resolveBlogSiteIdentity } from "../../utils/site-identity";
+
+const slug = decodeSlug(Astro.params.slug);
+if (!slug) return Astro.redirect("/404");
+
+const { entry: episode, cacheHint } = await getEmDashEntry("episodes", slug);
+if (!episode) return Astro.redirect("/404");
+
+Astro.cache.set(cacheHint);
+
+function getImageUrl(img: unknown): string | undefined {
+	if (!img || typeof img !== "object") return undefined;
+	const image = img as Record<string, unknown>;
+	if (typeof image.src === "string" && image.src) {
+		return image.src.startsWith("http") ? image.src : `${Astro.url.origin}${image.src}`;
+	}
+	const meta = image.meta as Record<string, unknown> | undefined;
+	const storageKey =
+		(typeof meta?.storageKey === "string" ? meta.storageKey : undefined) ||
+		(typeof image.id === "string" ? image.id : undefined);
+	if (storageKey) return `${Astro.url.origin}/_emdash/api/media/file/${storageKey}`;
+	return undefined;
+}
+
+const coverArtUrl = getImageUrl(episode.data.cover_art);
+const { siteTitle } = resolveBlogSiteIdentity(await getSiteSettings());
+
+const seo = getSeoMeta(episode, {
+	siteTitle,
+	siteUrl: Astro.url.origin,
+	path: `/episodes/${slug}`,
+	defaultOgImage: coverArtUrl,
+});
+
+const topics = await getEntryTerms("episodes", episode.data.id, "topic");
+
+const publishDate = episode.data.publishedAt?.toLocaleDateString("en-US", {
+	year: "numeric",
+	month: "long",
+	day: "numeric",
+}) ?? null;
+
+const epLabel = episode.data.episode_number != null
+	? `EP. ${String(episode.data.episode_number).padStart(3, "0")}`
+	: null;
+
+// YouTube embed URL
+const youtubeEmbedUrl = episode.data.youtube_video_id
+	? `https://www.youtube.com/embed/${episode.data.youtube_video_id}?rel=0&modestbranding=1`
+	: null;
+
+// More episodes (exclude current)
+const { entries: recentEps } = await getEmDashCollection("episodes", {
+	orderBy: { published_at: "desc" },
+	limit: 4,
+});
+const moreEps = recentEps.filter((e) => e.id !== episode.id).slice(0, 3);
+const moreEpsWithTopics = await Promise.all(
+	moreEps.map(async (ep) => {
+		const epTopics = await getEntryTerms("episodes", ep.data.id, "topic");
+		return { ep, topics: epTopics };
+	})
+);
+
+const hasTranscript = episode.data.transcript && Array.isArray(episode.data.transcript) && episode.data.transcript.length > 0;
+const hasShowNotes = episode.data.show_notes && Array.isArray(episode.data.show_notes) && episode.data.show_notes.length > 0;
+---
+
+<Base
+	title={seo.title}
+	pageTitle={seo.ogTitle}
+	description={seo.description}
+	image={seo.ogImage}
+	canonical={seo.canonical}
+	robots={seo.robots}
+	type="article"
+	publishedTime={episode.data.publishedAt?.toISOString() ?? null}
+	modifiedTime={episode.data.updatedAt.toISOString()}
+	content={{ collection: "episodes", id: episode.data.id, slug }}
+>
+	<article class="episode-article">
+		{/* ── Episode header ── */}
+		<div class="ep-hero">
+			<div class="ep-hero-inner">
+				<div class="ep-breadcrumb">
+					<a href="/episodes">← All Episodes</a>
+				</div>
+				<div class="ep-kicker">
+					{epLabel && <span class="ep-num">{epLabel}</span>}
+					{episode.data.season_number != null && (
+						<span class="ep-season">Season {episode.data.season_number}</span>
+					)}
+					{publishDate && (
+						<>
+							<span class="ep-dot">·</span>
+							<time class="ep-date">{publishDate}</time>
+						</>
+					)}
+					{episode.data.audio_duration && (
+						<>
+							<span class="ep-dot">·</span>
+							<span class="ep-duration">{episode.data.audio_duration}</span>
+						</>
+					)}
+				</div>
+				<h1 class="ep-title" {...episode.edit.title}>{episode.data.title}</h1>
+				{episode.data.excerpt && (
+					<p class="ep-excerpt" {...episode.edit.excerpt}>{episode.data.excerpt}</p>
+				)}
+				{topics.length > 0 && (
+					<div class="ep-topics">
+						{topics.map((t) => (
+							<a href={`/topic/${t.slug}`} class="ep-topic">{t.label}</a>
+						))}
+					</div>
+				)}
+			</div>
+		</div>
+
+		{/* ── Video/Cover ── */}
+		<div class="ep-media-section">
+			<div class="ep-media-inner">
+				{youtubeEmbedUrl ? (
+					<div class="video-wrap">
+						<iframe
+							src={youtubeEmbedUrl}
+							title={episode.data.title ?? "Episode video"}
+							allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+							allowfullscreen
+							loading="lazy"
+						></iframe>
+					</div>
+				) : episode.data.cover_art ? (
+					<div class="cover-art" {...episode.edit.cover_art}>
+						<Image image={episode.data.cover_art} />
+					</div>
+				) : null}
+
+				{/* Audio player */}
+				{episode.data.audio_url && (
+					<div class="audio-player-wrap">
+						<div class="audio-label">
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+							Audio only
+						</div>
+						<audio controls class="audio-player" preload="metadata">
+							<source src={episode.data.audio_url} type="audio/mpeg" />
+							Your browser does not support the audio element.
+						</audio>
+					</div>
+				)}
+			</div>
+		</div>
+
+		{/* ── Main content ── */}
+		<div class="ep-body">
+			<div class="ep-content-col">
+				{hasShowNotes && (
+					<section class="content-section">
+						<h2 class="content-section-heading">Show Notes</h2>
+						<div class="ep-prose">
+							<PortableText value={episode.data.show_notes} />
+						</div>
+					</section>
+				)}
+
+				{hasTranscript && (
+					<section class="content-section">
+						<details class="transcript-details">
+							<summary class="transcript-summary">
+								<span>Full Transcript</span>
+								<svg class="transcript-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+							</summary>
+							<div class="ep-prose transcript-body">
+								<PortableText value={episode.data.transcript} />
+							</div>
+						</details>
+					</section>
+				)}
+
+				<div class="ep-comments">
+					<Comments collection="episodes" contentId={episode.data.id} threaded />
+					<CommentForm collection="episodes" contentId={episode.data.id} />
+				</div>
+			</div>
+
+			<aside class="ep-sidebar">
+				<div class="sidebar-sticky">
+					{topics.length > 0 && (
+						<div class="sidebar-block">
+							<h3 class="sidebar-heading">Topics</h3>
+							<div class="sidebar-topics">
+								{topics.map((t) => (
+									<a href={`/topic/${t.slug}`} class="sidebar-topic">{t.label}</a>
+								))}
+							</div>
+						</div>
+					)}
+					{episode.data.audio_url && (
+						<div class="sidebar-block">
+							<h3 class="sidebar-heading">Download</h3>
+							<a href={episode.data.audio_url} download class="sidebar-download">
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+								Download MP3
+							</a>
+						</div>
+					)}
+					<div class="sidebar-block">
+						<h3 class="sidebar-heading">Subscribe</h3>
+						<div class="sidebar-links">
+							<a href="/podcast.xml" class="sidebar-link">
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.18 15.64a2.18 2.18 0 0 1 2.18 2.18C8.36 19.01 7.38 20 6.18 20C4.98 20 4 19.01 4 17.82a2.18 2.18 0 0 1 2.18-2.18M4 4.44A15.56 15.56 0 0 1 19.56 20h-2.83A12.73 12.73 0 0 0 4 7.27V4.44m0 5.66a9.9 9.9 0 0 1 9.9 9.9h-2.83A7.07 7.07 0 0 0 4 12.93V10.1z"/></svg>
+								RSS Feed
+							</a>
+						</div>
+					</div>
+				</div>
+			</aside>
+		</div>
+
+		{/* ── Patreon Banner ── */}
+		<PatreonBanner />
+
+		{/* ── More episodes ── */}
+		{moreEpsWithTopics.length > 0 && (
+			<section class="more-episodes">
+				<div class="more-inner">
+					<h2 class="more-title">More Episodes</h2>
+					<div class="more-grid">
+						{moreEpsWithTopics.map(({ ep, topics: epTopics }) => (
+							<EpisodeCard
+								title={ep.data.title}
+								excerpt={ep.data.excerpt}
+								coverArt={ep.data.cover_art}
+								href={`/episodes/${ep.id}`}
+								date={ep.data.publishedAt ?? undefined}
+								episodeNumber={ep.data.episode_number}
+								seasonNumber={ep.data.season_number}
+								duration={ep.data.audio_duration}
+								topics={epTopics}
+							/>
+						))}
+					</div>
+				</div>
+			</section>
+		)}
+	</article>
+</Base>
+
+<style>
+	/* ── Hero ─────────────────────────────── */
+	.ep-hero {
+		background: var(--color-bg-subtle);
+		border-bottom: 1px solid var(--color-border-subtle);
+		padding: var(--spacing-12) 0 var(--spacing-10);
+	}
+
+	.ep-hero-inner {
+		max-width: var(--wide-width);
+		margin: 0 auto;
+		padding: 0 var(--spacing-6);
+	}
+
+	.ep-breadcrumb {
+		margin-bottom: var(--spacing-6);
+	}
+
+	.ep-breadcrumb a {
+		font-size: var(--font-size-sm);
+		color: var(--color-muted);
+		text-decoration: none;
+		transition: color var(--transition-fast);
+	}
+
+	.ep-breadcrumb a:hover { color: var(--color-accent); }
+
+	.ep-kicker {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: var(--spacing-3);
+		margin-bottom: var(--spacing-4);
+		font-size: var(--font-size-sm);
+		color: var(--color-muted);
+	}
+
+	.ep-num {
+		font-family: var(--font-heading);
+		font-size: 1.1rem;
+		letter-spacing: 0.1em;
+		background: var(--gradient-fire);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
+	}
+
+	.ep-season {
+		font-weight: 600;
+		font-size: var(--font-size-xs);
+		text-transform: uppercase;
+		letter-spacing: var(--tracking-wide);
+		color: var(--color-muted);
+	}
+
+	.ep-dot { color: var(--color-border); }
+	.ep-date, .ep-duration { font-size: var(--font-size-xs); }
+
+	.ep-title {
+		font-family: var(--font-heading);
+		font-size: clamp(2rem, 5vw, 4rem);
+		font-weight: 400;
+		text-transform: uppercase;
+		letter-spacing: 0.02em;
+		line-height: var(--leading-tight);
+		max-width: 900px;
+		margin-bottom: var(--spacing-5);
+	}
+
+	.ep-excerpt {
+		font-size: var(--font-size-xl);
+		line-height: var(--leading-relaxed);
+		color: var(--color-text-secondary);
+		max-width: 720px;
+		margin-bottom: var(--spacing-5);
+	}
+
+	.ep-topics {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--spacing-2);
+	}
+
+	.ep-topic {
+		display: inline-block;
+		padding: 4px var(--spacing-3);
+		font-size: var(--font-size-xs);
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: var(--tracking-wide);
+		color: var(--color-text-secondary);
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		text-decoration: none;
+		transition: color var(--transition-fast), border-color var(--transition-fast);
+	}
+
+	.ep-topic:hover {
+		color: var(--color-accent);
+		border-color: var(--color-accent);
+	}
+
+	/* ── Media ────────────────────────────── */
+	.ep-media-section {
+		background: #000;
+		padding: var(--spacing-6) 0;
+	}
+
+	.ep-media-inner {
+		max-width: var(--wide-width);
+		margin: 0 auto;
+		padding: 0 var(--spacing-6);
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-4);
+	}
+
+	.video-wrap {
+		position: relative;
+		width: 100%;
+		max-width: 960px;
+		margin: 0 auto;
+	}
+
+	.video-wrap iframe {
+		display: block;
+		width: 100%;
+		aspect-ratio: 16 / 9;
+		border: none;
+		border-radius: var(--radius-xl);
+	}
+
+	.cover-art {
+		max-width: 720px;
+		margin: 0 auto;
+		border-radius: var(--radius-xl);
+		overflow: hidden;
+	}
+
+	.cover-art img {
+		width: 100%;
+		height: auto;
+		aspect-ratio: 16 / 9;
+		object-fit: cover;
+	}
+
+	.audio-player-wrap {
+		max-width: 720px;
+		margin: 0 auto;
+		width: 100%;
+		display: flex;
+		align-items: center;
+		gap: var(--spacing-4);
+		padding: var(--spacing-4) var(--spacing-6);
+		background: rgba(255, 255, 255, 0.05);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		border-radius: var(--radius-lg);
+	}
+
+	.audio-label {
+		display: flex;
+		align-items: center;
+		gap: var(--spacing-2);
+		font-size: var(--font-size-sm);
+		color: rgba(255, 255, 255, 0.6);
+		white-space: nowrap;
+		flex-shrink: 0;
+	}
+
+	.audio-player {
+		flex: 1;
+		min-width: 0;
+		height: 36px;
+		accent-color: var(--color-fire-orange);
+	}
+
+	/* ── Body ─────────────────────────────── */
+	.ep-body {
+		max-width: var(--wide-width);
+		margin: 0 auto;
+		padding: var(--spacing-12) var(--spacing-6);
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) 220px;
+		gap: var(--spacing-12);
+		align-items: start;
+	}
+
+	.ep-content-col { min-width: 0; }
+
+	.content-section {
+		margin-bottom: var(--spacing-10);
+		padding-bottom: var(--spacing-10);
+		border-bottom: 1px solid var(--color-border-subtle);
+	}
+
+	.content-section:last-child {
+		border-bottom: none;
+	}
+
+	.content-section-heading {
+		font-family: var(--font-heading);
+		font-size: 1.4rem;
+		font-weight: 400;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		margin-bottom: var(--spacing-6);
+		padding-bottom: var(--spacing-3);
+		border-bottom: 2px solid var(--color-accent);
+		display: inline-block;
+	}
+
+	/* ── Prose ────────────────────────────── */
+	.ep-prose :global(p) { margin-bottom: 1.4em; color: var(--color-text); line-height: var(--leading-relaxed); }
+	.ep-prose :global(h2) { font-family: var(--font-heading); font-size: 1.5rem; font-weight: 400; text-transform: uppercase; margin-top: 2em; margin-bottom: 0.6em; }
+	.ep-prose :global(h3) { font-family: var(--font-heading); font-size: 1.2rem; font-weight: 400; text-transform: uppercase; margin-top: 1.5em; margin-bottom: 0.4em; color: var(--color-accent); }
+	.ep-prose :global(ul), .ep-prose :global(ol) { margin-bottom: 1.4em; padding-left: 1.5em; }
+	.ep-prose :global(li) { margin-bottom: 0.5em; line-height: var(--leading-relaxed); }
+	.ep-prose :global(blockquote) { margin: 1.5em 0; padding: var(--spacing-4) var(--spacing-6); border-left: 3px solid var(--color-accent); background: var(--color-bg-subtle); border-radius: 0 var(--radius) var(--radius) 0; font-style: italic; color: var(--color-text-secondary); }
+	.ep-prose :global(a) { color: var(--color-accent); text-decoration: underline; text-underline-offset: 3px; }
+
+	/* ── Transcript ───────────────────────── */
+	.transcript-details {
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-lg);
+		overflow: hidden;
+	}
+
+	.transcript-summary {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: var(--spacing-4) var(--spacing-6);
+		cursor: pointer;
+		font-family: var(--font-heading);
+		font-size: 1.1rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		background: var(--color-surface);
+		user-select: none;
+		list-style: none;
+		transition: background var(--transition-fast);
+	}
+
+	.transcript-summary::-webkit-details-marker { display: none; }
+	.transcript-summary:hover { background: var(--color-border-subtle); }
+
+	.transcript-chevron {
+		transition: transform var(--transition-base);
+	}
+
+	.transcript-details[open] .transcript-chevron {
+		transform: rotate(180deg);
+	}
+
+	.transcript-body {
+		padding: var(--spacing-6);
+		max-height: 600px;
+		overflow-y: auto;
+		border-top: 1px solid var(--color-border);
+	}
+
+	/* ── Sidebar ──────────────────────────── */
+	.ep-sidebar { min-width: 0; }
+
+	.sidebar-sticky {
+		position: sticky;
+		top: calc(var(--nav-height) + var(--spacing-8));
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-6);
+	}
+
+	.sidebar-block {
+		padding-bottom: var(--spacing-5);
+		border-bottom: 1px solid var(--color-border-subtle);
+	}
+
+	.sidebar-block:last-child { border-bottom: none; }
+
+	.sidebar-heading {
+		font-family: var(--font-sans);
+		font-size: var(--font-size-xs);
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: var(--tracking-wider);
+		color: var(--color-muted);
+		margin-bottom: var(--spacing-3);
+	}
+
+	.sidebar-topics {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--spacing-2);
+	}
+
+	.sidebar-topic {
+		display: inline-block;
+		padding: 3px var(--spacing-2);
+		font-size: var(--font-size-xs);
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: var(--tracking-wide);
+		color: var(--color-text-secondary);
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		text-decoration: none;
+		transition: color var(--transition-fast), border-color var(--transition-fast);
+	}
+
+	.sidebar-topic:hover { color: var(--color-accent); border-color: var(--color-accent); }
+
+	.sidebar-download,
+	.sidebar-link {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--spacing-2);
+		font-size: var(--font-size-sm);
+		color: var(--color-text-secondary);
+		text-decoration: none;
+		transition: color var(--transition-fast);
+	}
+
+	.sidebar-download:hover,
+	.sidebar-link:hover { color: var(--color-accent); }
+
+	.sidebar-links {
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-2);
+	}
+
+	/* ── Comments ─────────────────────────── */
+	.ep-comments {
+		margin-top: var(--spacing-12);
+		padding-top: var(--spacing-8);
+		border-top: 1px solid var(--color-border);
+	}
+
+	.ep-comments :global(.ec-comments-heading) {
+		font-family: var(--font-heading);
+		font-size: 1.4rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		margin-bottom: var(--spacing-8);
+	}
+
+	/* ── More episodes ────────────────────── */
+	.more-episodes {
+		background: var(--color-bg-subtle);
+		padding: var(--spacing-12) 0;
+		border-top: 1px solid var(--color-border-subtle);
+	}
+
+	.more-inner {
+		max-width: var(--wide-width);
+		margin: 0 auto;
+		padding: 0 var(--spacing-6);
+	}
+
+	.more-title {
+		font-family: var(--font-heading);
+		font-size: 1.6rem;
+		font-weight: 400;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		margin-bottom: var(--spacing-8);
+		padding-bottom: var(--spacing-4);
+		border-bottom: 1px solid var(--color-border-subtle);
+	}
+
+	.more-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: var(--spacing-8);
+	}
+
+	/* ── Responsive ───────────────────────── */
+	@media (max-width: 1000px) {
+		.ep-body {
+			grid-template-columns: 1fr;
+		}
+		.ep-sidebar { display: none; }
+	}
+
+	@media (max-width: 900px) {
+		.more-grid { grid-template-columns: repeat(2, 1fr); }
+	}
+
+	@media (max-width: 640px) {
+		.ep-hero { padding: var(--spacing-8) 0; }
+		.ep-title { font-size: clamp(1.8rem, 7vw, 2.5rem); }
+		.audio-player-wrap { flex-direction: column; align-items: flex-start; }
+		.more-grid { grid-template-columns: 1fr; }
+	}
+</style>

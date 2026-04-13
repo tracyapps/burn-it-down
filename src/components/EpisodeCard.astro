@@ -1,0 +1,246 @@
+---
+import type { MediaValue } from "emdash";
+import { Image } from "emdash/ui";
+
+interface Props {
+	title: string;
+	excerpt?: string | null;
+	coverArt?: MediaValue | string | null;
+	href: string;
+	date?: Date;
+	episodeNumber?: number | null;
+	seasonNumber?: number | null;
+	duration?: string | null;
+	topics?: Array<{ slug: string; label: string }>;
+}
+
+const {
+	title,
+	excerpt,
+	coverArt,
+	href,
+	date,
+	episodeNumber,
+	seasonNumber,
+	duration,
+	topics,
+} = Astro.props;
+
+const formattedDate = date
+	? date.toLocaleDateString("en-US", {
+			year: "numeric",
+			month: "short",
+			day: "numeric",
+		})
+	: null;
+
+const epLabel = episodeNumber != null
+	? `EP. ${String(episodeNumber).padStart(3, "0")}`
+	: null;
+---
+
+<article class="episode-card">
+	<a href={href} class="card-link">
+		<div class="card-image-wrap">
+			{coverArt ? (
+				<div class="card-image">
+					<Image image={coverArt} />
+				</div>
+			) : (
+				<div class="card-placeholder">
+					<svg viewBox="0 0 60 60" fill="none" class="placeholder-icon">
+						<circle cx="30" cy="30" r="22" stroke="currentColor" stroke-width="2"/>
+						<polygon points="25,20 45,30 25,40" fill="currentColor"/>
+					</svg>
+				</div>
+			)}
+			{epLabel && <span class="card-ep-badge">{epLabel}</span>}
+		</div>
+
+		<div class="card-body">
+			<div class="card-meta">
+				{epLabel && (
+					<span class="card-ep-num">{epLabel}</span>
+				)}
+				{seasonNumber != null && (
+					<span class="card-season">S{seasonNumber}</span>
+				)}
+				{(epLabel || seasonNumber != null) && (formattedDate || duration) && (
+					<span class="meta-dot" />
+				)}
+				{formattedDate && <time class="card-date">{formattedDate}</time>}
+				{formattedDate && duration && <span class="meta-dot" />}
+				{duration && <span class="card-duration">{duration}</span>}
+			</div>
+
+			<h2 class="card-title">{title}</h2>
+
+			{excerpt && (
+				<p class="card-excerpt">{excerpt}</p>
+			)}
+		</div>
+	</a>
+
+	{topics && topics.length > 0 && (
+		<div class="card-topics">
+			{topics.slice(0, 3).map((topic) => (
+				<a href={`/topic/${topic.slug}`} class="card-topic">
+					{topic.label}
+				</a>
+			))}
+		</div>
+	)}
+</article>
+
+<style>
+	.episode-card {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.card-link {
+		display: block;
+		text-decoration: none;
+		color: inherit;
+	}
+
+	.card-image-wrap {
+		position: relative;
+		margin-bottom: var(--spacing-4);
+	}
+
+	.card-image {
+		aspect-ratio: 16 / 9;
+		overflow: hidden;
+		border-radius: var(--radius-lg);
+		background: var(--color-surface);
+	}
+
+	.card-image img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		transition: transform 0.4s ease;
+	}
+
+	.card-link:hover .card-image img {
+		transform: scale(1.04);
+	}
+
+	.card-placeholder {
+		aspect-ratio: 16 / 9;
+		border-radius: var(--radius-lg);
+		background: var(--color-surface);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.placeholder-icon {
+		width: 40px;
+		height: 40px;
+		color: var(--color-muted);
+		opacity: 0.4;
+	}
+
+	.card-ep-badge {
+		position: absolute;
+		top: var(--spacing-3);
+		left: var(--spacing-3);
+		font-family: var(--font-heading);
+		font-size: 0.85rem;
+		letter-spacing: 0.08em;
+		color: #fff;
+		background: var(--gradient-fire);
+		padding: 3px 10px;
+		border-radius: var(--radius);
+		line-height: 1.4;
+		pointer-events: none;
+	}
+
+	.card-body { flex: 1; }
+
+	.card-meta {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		column-gap: var(--spacing-2);
+		row-gap: 2px;
+		font-size: var(--font-size-xs);
+		color: var(--color-muted);
+		margin-bottom: var(--spacing-2);
+		text-transform: uppercase;
+		letter-spacing: var(--tracking-wide);
+	}
+
+	.card-ep-num,
+	.card-season {
+		font-weight: 700;
+		color: var(--color-accent);
+	}
+
+	.card-date,
+	.card-duration {
+		white-space: nowrap;
+	}
+
+	.meta-dot {
+		width: 3px;
+		height: 3px;
+		border-radius: 50%;
+		background: var(--color-muted);
+		flex-shrink: 0;
+	}
+
+	.card-title {
+		font-family: var(--font-heading);
+		font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+		font-weight: 400;
+		text-transform: uppercase;
+		letter-spacing: var(--tracking-heading);
+		line-height: var(--leading-tight);
+		margin-bottom: var(--spacing-2);
+		transition: color var(--transition-fast);
+	}
+
+	.card-link:hover .card-title {
+		color: var(--color-accent);
+	}
+
+	.card-excerpt {
+		font-size: var(--font-size-sm);
+		line-height: var(--leading-relaxed);
+		color: var(--color-text-secondary);
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+
+	.card-topics {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--spacing-2);
+		margin-top: var(--spacing-3);
+	}
+
+	.card-topic {
+		display: inline-block;
+		padding: var(--tag-padding-y) var(--spacing-2);
+		font-size: var(--font-size-xs);
+		font-weight: 500;
+		color: var(--color-muted);
+		background: var(--color-surface);
+		border: 1px solid var(--color-border-subtle);
+		border-radius: var(--radius);
+		text-decoration: none;
+		text-transform: uppercase;
+		letter-spacing: var(--tracking-wide);
+		transition: color var(--transition-fast), border-color var(--transition-fast);
+	}
+
+	.card-topic:hover {
+		color: var(--color-accent);
+		border-color: var(--color-accent);
+	}
+</style>

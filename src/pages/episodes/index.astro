@@ -1,0 +1,171 @@
+---
+import { getEmDashCollection, getEntryTerms, getTaxonomyTerms, getSiteSettings } from "emdash";
+import Base from "../../layouts/Base.astro";
+import EpisodeCard from "../../components/EpisodeCard.astro";
+import { resolveBlogSiteIdentity } from "../../utils/site-identity";
+
+const { entries: episodes, cacheHint } = await getEmDashCollection("episodes", {
+	orderBy: { published_at: "desc" },
+});
+
+Astro.cache.set(cacheHint);
+
+const { siteTitle } = resolveBlogSiteIdentity(await getSiteSettings());
+
+const sorted = episodes.toSorted((a, b) => {
+	const dateA = a.data.publishedAt?.getTime() ?? 0;
+	const dateB = b.data.publishedAt?.getTime() ?? 0;
+	return dateB - dateA;
+});
+
+const episodesWithTopics = await Promise.all(
+	sorted.map(async (ep) => {
+		const topics = await getEntryTerms("episodes", ep.data.id, "topic");
+		return { ep, topics };
+	})
+);
+
+const allTopics = await getTaxonomyTerms("topic");
+---
+
+<Base title={`All Episodes — ${siteTitle}`} description="Every episode of B.U.R.N. It Down. Video, audio, and full transcripts.">
+	<div class="archive-hero">
+		<div class="archive-hero-inner">
+			<h1 class="archive-title">All Episodes</h1>
+			<p class="archive-sub">
+				{sorted.length} episode{sorted.length !== 1 ? "s" : ""} · New episodes every week
+			</p>
+		</div>
+	</div>
+
+	<div class="archive-wrap">
+		{allTopics.length > 0 && (
+			<div class="filter-bar">
+				<a href="/episodes" class="filter-pill filter-pill--active">All</a>
+				{allTopics.map((t) => (
+					<a href={`/topic/${t.slug}`} class="filter-pill">{t.label}</a>
+				))}
+			</div>
+		)}
+
+		{episodes.length === 0 ? (
+			<p class="empty-msg">No episodes yet. Check back soon.</p>
+		) : (
+			<div class="episodes-grid">
+				{episodesWithTopics.map(({ ep, topics }) => (
+					<EpisodeCard
+						title={ep.data.title}
+						excerpt={ep.data.excerpt}
+						coverArt={ep.data.cover_art}
+						href={`/episodes/${ep.id}`}
+						date={ep.data.publishedAt ?? undefined}
+						episodeNumber={ep.data.episode_number}
+						seasonNumber={ep.data.season_number}
+						duration={ep.data.audio_duration}
+						topics={topics}
+					/>
+				))}
+			</div>
+		)}
+	</div>
+</Base>
+
+<style>
+	.archive-hero {
+		background: var(--color-bg-subtle);
+		border-bottom: 1px solid var(--color-border-subtle);
+		padding: var(--spacing-16) 0 var(--spacing-10);
+		position: relative;
+		overflow: hidden;
+	}
+
+	.archive-hero::after {
+		content: "";
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		height: 3px;
+		background: var(--gradient-fire-horizontal);
+	}
+
+	.archive-hero-inner {
+		max-width: var(--wide-width);
+		margin: 0 auto;
+		padding: 0 var(--spacing-6);
+	}
+
+	.archive-title {
+		font-family: var(--font-heading);
+		font-size: clamp(3rem, 8vw, 5rem);
+		font-weight: 400;
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+		line-height: 1;
+		background: var(--gradient-fire);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
+		margin-bottom: var(--spacing-3);
+	}
+
+	.archive-sub {
+		font-size: var(--font-size-base);
+		color: var(--color-muted);
+	}
+
+	.archive-wrap {
+		max-width: var(--wide-width);
+		margin: 0 auto;
+		padding: var(--spacing-10) var(--spacing-6) var(--spacing-16);
+	}
+
+	.filter-bar {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--spacing-2);
+		margin-bottom: var(--spacing-10);
+	}
+
+	.filter-pill {
+		display: inline-block;
+		padding: 6px var(--spacing-4);
+		font-size: var(--font-size-xs);
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: var(--tracking-wide);
+		color: var(--color-text-secondary);
+		border: 1px solid var(--color-border);
+		border-radius: 999px;
+		text-decoration: none;
+		transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+	}
+
+	.filter-pill:hover,
+	.filter-pill--active {
+		color: var(--color-accent);
+		border-color: var(--color-accent);
+		background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+	}
+
+	.empty-msg {
+		color: var(--color-muted);
+		text-align: center;
+		padding: var(--spacing-16) 0;
+	}
+
+	.episodes-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: var(--spacing-12) var(--spacing-8);
+	}
+
+	@media (max-width: 900px) {
+		.episodes-grid { grid-template-columns: repeat(2, 1fr); }
+	}
+
+	@media (max-width: 600px) {
+		.episodes-grid { grid-template-columns: 1fr; }
+		.archive-hero { padding: var(--spacing-10) 0 var(--spacing-6); }
+	}
+</style>

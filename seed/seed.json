@@ -1,0 +1,609 @@
+{
+	"$schema": "https://emdashcms.com/seed.schema.json",
+	"version": "1",
+	"meta": {
+		"name": "B.U.R.N. It Down Podcast",
+		"description": "A podcast about disrupting unjust systems",
+		"author": "B.U.R.N. It Down"
+	},
+
+	"settings": {
+		"title": "B.U.R.N. It Down",
+		"tagline": "Disrupting unjust systems. One episode at a time."
+	},
+
+	"collections": [
+		{
+			"slug": "episodes",
+			"label": "Episodes",
+			"labelSingular": "Episode",
+			"supports": ["drafts", "revisions", "search", "seo"],
+			"commentsEnabled": true,
+			"fields": [
+				{
+					"slug": "title",
+					"label": "Episode Title",
+					"type": "string",
+					"required": true,
+					"searchable": true
+				},
+				{
+					"slug": "episode_number",
+					"label": "Episode Number",
+					"type": "integer"
+				},
+				{
+					"slug": "season_number",
+					"label": "Season Number",
+					"type": "integer"
+				},
+				{
+					"slug": "cover_art",
+					"label": "Cover Art / Thumbnail",
+					"type": "image"
+				},
+				{
+					"slug": "youtube_video_id",
+					"label": "YouTube Video ID",
+					"type": "string"
+				},
+				{
+					"slug": "audio_url",
+					"label": "Audio File URL (public MP3/M4A link)",
+					"type": "string"
+				},
+				{
+					"slug": "audio_file_size",
+					"label": "Audio File Size (bytes — required for podcast feeds)",
+					"type": "integer"
+				},
+				{
+					"slug": "audio_duration",
+					"label": "Duration (e.g. 1:02:14)",
+					"type": "string"
+				},
+				{
+					"slug": "excerpt",
+					"label": "Episode Description",
+					"type": "text",
+					"searchable": true
+				},
+				{
+					"slug": "show_notes",
+					"label": "Show Notes",
+					"type": "portableText",
+					"searchable": true
+				},
+				{
+					"slug": "transcript",
+					"label": "Transcript",
+					"type": "portableText",
+					"searchable": true
+				}
+			]
+		},
+		{
+			"slug": "pages",
+			"label": "Pages",
+			"labelSingular": "Page",
+			"supports": ["drafts", "revisions", "search"],
+			"fields": [
+				{
+					"slug": "title",
+					"label": "Title",
+					"type": "string",
+					"required": true,
+					"searchable": true
+				},
+				{
+					"slug": "content",
+					"label": "Content",
+					"type": "portableText",
+					"searchable": true
+				}
+			]
+		}
+	],
+
+	"taxonomies": [
+		{
+			"name": "topic",
+			"label": "Topics",
+			"labelSingular": "Topic",
+			"hierarchical": false,
+			"collections": ["episodes"],
+			"terms": [
+				{ "slug": "racial-justice", "label": "Racial Justice" },
+				{ "slug": "economic-justice", "label": "Economic Justice" },
+				{ "slug": "climate-justice", "label": "Climate Justice" },
+				{ "slug": "housing", "label": "Housing" },
+				{ "slug": "politics", "label": "Politics" },
+				{ "slug": "culture", "label": "Culture" },
+				{ "slug": "interview", "label": "Interview" },
+				{ "slug": "community", "label": "Community Organizing" }
+			]
+		}
+	],
+
+	"bylines": [
+		{
+			"id": "byline-hosts",
+			"slug": "burn-hosts",
+			"displayName": "The B.U.R.N. Hosts"
+		},
+		{
+			"id": "byline-guest",
+			"slug": "guest",
+			"displayName": "Guest",
+			"isGuest": true
+		}
+	],
+
+	"menus": [
+		{
+			"name": "primary",
+			"label": "Primary Navigation",
+			"items": [
+				{ "type": "custom", "label": "Home", "url": "/" },
+				{ "type": "custom", "label": "Episodes", "url": "/episodes" },
+				{ "type": "custom", "label": "About", "url": "/pages/about" },
+				{ "type": "custom", "label": "Contact", "url": "/pages/contact" },
+				{
+					"type": "custom",
+					"label": "Support on Patreon",
+					"url": "https://www.patreon.com/burnitdown",
+					"target": "_blank"
+				}
+			]
+		},
+		{
+			"name": "platforms",
+			"label": "Podcast Platforms",
+			"items": [
+				{
+					"type": "custom",
+					"label": "Apple Podcasts",
+					"url": "https://podcasts.apple.com/",
+					"target": "_blank"
+				},
+				{
+					"type": "custom",
+					"label": "Spotify",
+					"url": "https://open.spotify.com/",
+					"target": "_blank"
+				},
+				{
+					"type": "custom",
+					"label": "RSS Feed",
+					"url": "/podcast.xml"
+				}
+			]
+		}
+	],
+
+	"widgetAreas": [
+		{
+			"name": "episode-sidebar",
+			"label": "Episode Sidebar",
+			"description": "Widget area shown on single episode pages",
+			"widgets": [
+				{
+					"type": "component",
+					"componentId": "core:recent-posts",
+					"title": "More Episodes",
+					"settings": {
+						"count": 5,
+						"showDate": true
+					}
+				},
+				{
+					"type": "component",
+					"componentId": "core:tags",
+					"title": "Topics"
+				}
+			]
+		},
+		{
+			"name": "footer",
+			"label": "Footer",
+			"description": "Widget area in the site footer",
+			"widgets": [
+				{
+					"type": "content",
+					"title": "About the Show",
+					"content": [
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "B.U.R.N. It Down is an independent podcast about dismantling unjust systems — economic, political, social, and cultural. We believe the first step to building something better is being honest about what needs to go."
+								}
+							]
+						}
+					]
+				}
+			]
+		}
+	],
+
+	"sections": [
+		{
+			"slug": "patreon-cta",
+			"title": "Support on Patreon",
+			"description": "Call-to-action to join the Patreon community",
+			"keywords": ["patreon", "support", "community", "cta"],
+			"source": "theme",
+			"content": [
+				{
+					"_type": "block",
+					"style": "h3",
+					"children": [{ "_type": "span", "text": "Join the Fire" }]
+				},
+				{
+					"_type": "block",
+					"style": "normal",
+					"children": [
+						{
+							"_type": "span",
+							"text": "Get exclusive bonus episodes, early access, and join a community of people committed to burning down unjust systems. Your support keeps this show independent."
+						}
+					]
+				}
+			]
+		}
+	],
+
+	"content": {
+		"pages": [
+			{
+				"id": "about",
+				"slug": "about",
+				"status": "published",
+				"data": {
+					"title": "About B.U.R.N. It Down",
+					"content": [
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "B.U.R.N. It Down is a podcast about disrupting unjust systems — economic, political, social, and cultural. We believe that the first step to building something better is being honest about what needs to go."
+								}
+							]
+						},
+						{
+							"_type": "block",
+							"style": "h2",
+							"children": [{ "_type": "span", "text": "Who We Are" }]
+						},
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "We're a small, independent media project. No corporate sponsors. No network overlords. Just people who care deeply about justice, truth, and the hard work of making change."
+								}
+							]
+						},
+						{
+							"_type": "block",
+							"style": "h2",
+							"children": [{ "_type": "span", "text": "Where to Listen" }]
+						},
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "New episodes drop every week. Find us on Apple Podcasts, Spotify, or subscribe via RSS. Video episodes are also on YouTube."
+								}
+							]
+						},
+						{
+							"_type": "block",
+							"style": "h2",
+							"children": [{ "_type": "span", "text": "Support the Show" }]
+						},
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "If this show matters to you, consider supporting us on Patreon. Every dollar goes directly toward making more episodes and keeping us independent. Patrons get exclusive bonus content and early access to new episodes."
+								}
+							]
+						}
+					]
+				}
+			},
+			{
+				"id": "contact",
+				"slug": "contact",
+				"status": "published",
+				"data": {
+					"title": "Contact",
+					"content": [
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "Have a tip? Want to be on the show? Got feedback? We'd love to hear from you."
+								}
+							]
+						},
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "Reach us at: hello@burnitdown.fm"
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"episodes": [
+			{
+				"id": "ep-001",
+				"slug": "the-system-is-working-as-designed",
+				"status": "published",
+				"data": {
+					"title": "The System Is Working — As Designed",
+					"episode_number": 1,
+					"season_number": 1,
+					"cover_art": {
+						"$media": {
+							"url": "https://images.unsplash.com/photo-1573164574572-cb89e39749b4?w=1200&h=675&fit=crop",
+							"alt": "Fire against dark sky",
+							"filename": "ep001-cover.jpg"
+						}
+					},
+					"youtube_video_id": "",
+					"audio_url": "",
+					"audio_file_size": 0,
+					"audio_duration": "1:02:14",
+					"excerpt": "In our debut episode, we lay out the thesis: the systems causing suffering aren't broken — they're doing exactly what they were built to do. And that changes everything about how we fight them.",
+					"show_notes": [
+						{
+							"_type": "block",
+							"style": "h2",
+							"children": [{ "_type": "span", "text": "Episode Notes" }]
+						},
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "In this debut episode, we dig into the foundational question: are unjust systems broken, or are they working exactly as intended? The answer shapes every strategy for change."
+								}
+							]
+						},
+						{
+							"_type": "block",
+							"style": "h3",
+							"children": [{ "_type": "span", "text": "Resources Mentioned" }]
+						},
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "Michelle Alexander — The New Jim Crow"
+								}
+							]
+						},
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "Keeanga-Yamahtta Taylor — From #BlackLivesMatter to Black Liberation"
+								}
+							]
+						},
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "Angela Davis — Are Prisons Obsolete?"
+								}
+							]
+						}
+					],
+					"transcript": [
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "[Full transcript will be available within 48 hours of release.]"
+								}
+							]
+						}
+					]
+				},
+				"bylines": [{ "byline": "byline-hosts" }],
+				"taxonomies": {
+					"topic": ["politics", "racial-justice"]
+				}
+			},
+			{
+				"id": "ep-002",
+				"slug": "housing-is-a-human-right",
+				"status": "published",
+				"data": {
+					"title": "Housing Is a Human Right — So Why Don't We Treat It Like One?",
+					"episode_number": 2,
+					"season_number": 1,
+					"cover_art": {
+						"$media": {
+							"url": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&h=675&fit=crop",
+							"alt": "Protest signs at a housing demonstration",
+							"filename": "ep002-cover.jpg"
+						}
+					},
+					"youtube_video_id": "",
+					"audio_url": "",
+					"audio_file_size": 0,
+					"audio_duration": "58:31",
+					"excerpt": "The housing crisis isn't a market failure — it's a policy choice. We trace how housing became a commodity and what movements around the world are doing to fight back.",
+					"show_notes": [
+						{
+							"_type": "block",
+							"style": "h2",
+							"children": [{ "_type": "span", "text": "Episode Notes" }]
+						},
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "This week we trace the history of housing as a right and how deliberate policy choices created today's crisis. From rent control to public housing to tenant organizing, what actually works?"
+								}
+							]
+						},
+						{
+							"_type": "block",
+							"style": "h3",
+							"children": [{ "_type": "span", "text": "Resources Mentioned" }]
+						},
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "Peter Marcuse — The Language of Gentrification"
+								}
+							]
+						},
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "Samuel Stein — Capital City: Gentrification and the Real Estate State"
+								}
+							]
+						}
+					],
+					"transcript": [
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "[Full transcript coming soon.]"
+								}
+							]
+						}
+					]
+				},
+				"bylines": [{ "byline": "byline-hosts" }],
+				"taxonomies": {
+					"topic": ["housing", "economic-justice"]
+				}
+			},
+			{
+				"id": "ep-003",
+				"slug": "climate-debt-who-pays",
+				"status": "published",
+				"data": {
+					"title": "Climate Debt: Who Owes Who, and Who's Gonna Pay?",
+					"episode_number": 3,
+					"season_number": 1,
+					"cover_art": {
+						"$media": {
+							"url": "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=1200&h=675&fit=crop",
+							"alt": "Climate justice protest",
+							"filename": "ep003-cover.jpg"
+						}
+					},
+					"youtube_video_id": "",
+					"audio_url": "",
+					"audio_file_size": 0,
+					"audio_duration": "1:05:42",
+					"excerpt": "The countries that contributed least to climate change are facing its worst consequences. We break down the concept of climate debt and why justice has to be at the center of any real solution.",
+					"show_notes": [
+						{
+							"_type": "block",
+							"style": "h2",
+							"children": [{ "_type": "span", "text": "Episode Notes" }]
+						},
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "Climate justice means confronting who created the crisis, who is suffering most, and who is responsible for bearing the cost of solutions. This week we break it all down."
+								}
+							]
+						},
+						{
+							"_type": "block",
+							"style": "h3",
+							"children": [{ "_type": "span", "text": "Resources Mentioned" }]
+						},
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "Naomi Klein — This Changes Everything: Capitalism vs. The Climate"
+								}
+							]
+						},
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "Olúfẹ́mi O. Táíwò — Reconsidering Reparations"
+								}
+							]
+						}
+					],
+					"transcript": [
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "[Full transcript coming soon.]"
+								}
+							]
+						}
+					]
+				},
+				"bylines": [{ "byline": "byline-hosts" }],
+				"taxonomies": {
+					"topic": ["climate-justice", "economic-justice"]
+				}
+			}
+		]
+	}
+}

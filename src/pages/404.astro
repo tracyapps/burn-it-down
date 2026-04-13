@@ -1,0 +1,104 @@
+---
+import Base from "../layouts/Base.astro";
+---
+
+<Base title="Page Not Found">
+	<div class="not-found">
+		<div class="nf-number">404</div>
+		<h1 class="nf-heading">This page got burned down.</h1>
+		<p class="nf-sub">The page you're looking for doesn't exist or has moved.</p>
+		<div class="nf-actions">
+			<a href="/" class="btn-fire">Back to home</a>
+			<a href="/episodes" class="btn-outline">Browse episodes</a>
+		</div>
+	</div>
+</Base>
+
+<style>
+	.not-found {
+		min-height: 60vh;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		text-align: center;
+		padding: var(--spacing-24) var(--spacing-6);
+		gap: var(--spacing-4);
+	}
+
+	.nf-number {
+		font-family: var(--font-heading);
+		font-size: clamp(6rem, 20vw, 12rem);
+		font-weight: 400;
+		letter-spacing: 0.05em;
+		line-height: 1;
+		background: var(--gradient-fire);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
+		opacity: 0.7;
+	}
+
+	.nf-heading {
+		font-family: var(--font-heading);
+		font-size: clamp(1.5rem, 4vw, 2.5rem);
+		font-weight: 400;
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+		color: var(--color-text);
+	}
+
+	.nf-sub {
+		color: var(--color-muted);
+		font-size: var(--font-size-base);
+		max-width: 400px;
+	}
+
+	.nf-actions {
+		display: flex;
+		gap: var(--spacing-3);
+		flex-wrap: wrap;
+		justify-content: center;
+		margin-top: var(--spacing-4);
+	}
+
+	.btn-fire {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--spacing-2);
+		padding: var(--spacing-3) var(--spacing-6);
+		font-size: var(--font-size-sm);
+		font-weight: 700;
+		color: #fff;
+		background: var(--gradient-fire);
+		border-radius: var(--radius-lg);
+		text-decoration: none;
+		box-shadow: var(--shadow-glow);
+		transition: box-shadow var(--transition-base), transform var(--transition-fast);
+	}
+
+	.btn-fire:hover {
+		box-shadow: var(--shadow-glow-strong);
+		transform: translateY(-2px);
+		color: #fff;
+	}
+
+	.btn-outline {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--spacing-2);
+		padding: var(--spacing-3) var(--spacing-6);
+		font-size: var(--font-size-sm);
+		font-weight: 600;
+		color: var(--color-text);
+		border: 1.5px solid var(--color-border);
+		border-radius: var(--radius-lg);
+		text-decoration: none;
+		transition: border-color var(--transition-fast), color var(--transition-fast);
+	}
+
+	.btn-outline:hover {
+		border-color: var(--color-accent);
+		color: var(--color-accent);
+	}
+</style>

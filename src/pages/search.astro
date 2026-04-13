@@ -1,0 +1,183 @@
+---
+export const prerender = false;
+
+import { getEmDashCollection } from "emdash";
+import Base from "../layouts/Base.astro";
+import EpisodeCard from "../components/EpisodeCard.astro";
+import { extractText } from "../utils/reading-time";
+
+const query = Astro.url.searchParams.get("q")?.trim() || "";
+
+const { entries: allEpisodes } = await getEmDashCollection("episodes");
+
+function matchesQuery(ep: (typeof allEpisodes)[0], q: string): boolean {
+	if (!q) return false;
+	const lower = q.toLowerCase();
+	const title = (ep.data.title || "").toLowerCase();
+	const excerpt = (ep.data.excerpt || "").toLowerCase();
+	const notes = extractText(ep.data.show_notes).toLowerCase();
+	const transcript = extractText(ep.data.transcript).toLowerCase();
+	return (
+		title.includes(lower) ||
+		excerpt.includes(lower) ||
+		notes.includes(lower) ||
+		transcript.includes(lower)
+	);
+}
+
+const results = query ? allEpisodes.filter((ep) => matchesQuery(ep, query)) : [];
+---
+
+<Base
+	title={query ? `Search: "${query}"` : "Search"}
+	description="Search episodes, show notes, and transcripts."
+>
+	<div class="search-page">
+		<div class="search-header">
+			<h1 class="search-title">Search</h1>
+		</div>
+
+		<div class="search-content">
+			<form method="get" action="/search" class="search-form">
+				<input
+					type="search"
+					name="q"
+					value={query}
+					placeholder="Search episodes, transcripts..."
+					class="search-input"
+					autofocus
+				/>
+				<button type="submit" class="search-btn">Search</button>
+			</form>
+
+			{query && (
+				<p class="search-summary">
+					{results.length === 0
+						? `No results for "${query}"`
+						: `${results.length} result${results.length === 1 ? "" : "s"} for "${query}"`}
+				</p>
+			)}
+
+			{results.length > 0 && (
+				<div class="search-results">
+					{results.map((ep) => (
+						<EpisodeCard
+							title={ep.data.title}
+							excerpt={ep.data.excerpt}
+							coverArt={ep.data.cover_art}
+							href={`/episodes/${ep.id}`}
+							date={ep.data.publishedAt ?? undefined}
+							episodeNumber={ep.data.episode_number}
+							seasonNumber={ep.data.season_number}
+							duration={ep.data.audio_duration}
+						/>
+					))}
+				</div>
+			)}
+
+			{!query && (
+				<p class="search-hint">
+					Enter a search term to find episodes, show notes, and transcripts.
+				</p>
+			)}
+		</div>
+	</div>
+</Base>
+
+<style>
+	.search-page {
+		max-width: var(--wide-width);
+		margin: 0 auto;
+	}
+
+	.search-header {
+		padding: var(--spacing-12) var(--spacing-6) var(--spacing-8);
+		border-bottom: 1px solid var(--color-border-subtle);
+	}
+
+	.search-title {
+		font-family: var(--font-heading);
+		font-size: clamp(2.5rem, 6vw, 4rem);
+		font-weight: 400;
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+		background: var(--gradient-fire);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
+	}
+
+	.search-content {
+		padding: var(--spacing-8) var(--spacing-6) var(--spacing-16);
+	}
+
+	.search-form {
+		display: flex;
+		gap: var(--spacing-3);
+		margin-bottom: var(--spacing-8);
+		max-width: 640px;
+	}
+
+	.search-input {
+		flex: 1;
+		padding: var(--spacing-3) var(--spacing-4);
+		font-size: var(--font-size-base);
+		font-family: var(--font-sans);
+		border: 1.5px solid var(--color-border);
+		border-radius: var(--radius-lg);
+		background: var(--color-bg);
+		color: var(--color-text);
+		transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+	}
+
+	.search-input:focus {
+		outline: none;
+		border-color: var(--color-accent);
+		box-shadow: 0 0 0 3px var(--color-accent-ring);
+	}
+
+	.search-input::placeholder { color: var(--color-muted); }
+
+	.search-btn {
+		padding: var(--spacing-3) var(--spacing-6);
+		font-size: var(--font-size-sm);
+		font-weight: 700;
+		font-family: var(--font-sans);
+		color: #fff;
+		background: var(--gradient-fire);
+		border: none;
+		border-radius: var(--radius-lg);
+		cursor: pointer;
+		box-shadow: var(--shadow-glow);
+		transition: box-shadow var(--transition-base);
+		white-space: nowrap;
+	}
+
+	.search-btn:hover { box-shadow: var(--shadow-glow-strong); }
+
+	.search-summary {
+		font-size: var(--font-size-sm);
+		color: var(--color-muted);
+		margin-bottom: var(--spacing-8);
+	}
+
+	.search-hint {
+		color: var(--color-muted);
+		font-size: var(--font-size-base);
+	}
+
+	.search-results {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: var(--spacing-12) var(--spacing-8);
+	}
+
+	@media (max-width: 900px) {
+		.search-results { grid-template-columns: repeat(2, 1fr); }
+	}
+
+	@media (max-width: 600px) {
+		.search-results { grid-template-columns: 1fr; }
+		.search-form { flex-direction: column; }
+	}
+</style>

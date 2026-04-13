@@ -1,0 +1,68 @@
+/*
+  theme.css — B.U.R.N. It Down fire theme
+*/
+
+:root {
+	/* Fire palette */
+	--color-fire-gold: #ffd700;
+	--color-fire-amber: #ff8c00;
+	--color-fire-orange: #ff4500;
+	--color-fire-red: #cc1500;
+	--color-fire-dark: #8b0000;
+
+	/* Gradients */
+	--gradient-fire: linear-gradient(135deg, #ffd700 0%, #ff8c00 30%, #ff4500 65%, #8b0000 100%);
+	--gradient-fire-horizontal: linear-gradient(90deg, #ffd700 0%, #ff8c00 30%, #ff4500 65%, #8b0000 100%);
+	--gradient-ember: linear-gradient(135deg, #ff6b35 0%, #cc1500 60%, #4a0000 100%);
+
+	/* Light mode — warm parchment + deep fire */
+	--color-bg: #fdf8f4;
+	--color-bg-subtle: #f5ede0;
+	--color-text: #1a0800;
+	--color-text-secondary: #5a3018;
+	--color-muted: #9a7055;
+	--color-border: #e0c8aa;
+	--color-border-subtle: #ede0ce;
+	--color-surface: #f0e0cc;
+	--color-accent: #c73b00;
+	--color-accent-hover: #a52d00;
+	--color-on-accent: #fff8f0;
+	--color-accent-ring: color-mix(in srgb, var(--color-accent) 25%, transparent);
+
+	/* Layout */
+	--radius-xl: 16px;
+}
+
+/* Dark mode via system preference */
+@media (prefers-color-scheme: dark) {
+	:root:not(.light) {
+		--color-bg: #0d0805;
+		--color-bg-subtle: #150e08;
+		--color-text: #f5ede0;
+		--color-text-secondary: #c0a085;
+		--color-muted: #7a5a40;
+		--color-border: #2d1f12;
+		--color-border-subtle: #1e1510;
+		--color-surface: #1a1208;
+		--color-accent: #ff6b35;
+		--color-accent-hover: #ff8a58;
+		--color-on-accent: #0a0500;
+		--color-accent-ring: color-mix(in srgb, var(--color-accent) 30%, transparent);
+	}
+}
+
+/* Explicit dark mode */
+:root.dark {
+	--color-bg: #0d0805;
+	--color-bg-subtle: #150e08;
+	--color-text: #f5ede0;
+	--color-text-secondary: #c0a085;
+	--color-muted: #7a5a40;
+	--color-border: #2d1f12;
+	--color-border-subtle: #1e1510;
+	--color-surface: #1a1208;
+	--color-accent: #ff6b35;
+	--color-accent-hover: #ff8a58;
+	--color-on-accent: #0a0500;
+	--color-accent-ring: color-mix(in srgb, var(--color-accent) 30%, transparent);
+}

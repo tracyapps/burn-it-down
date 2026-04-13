@@ -1,0 +1,471 @@
+---
+import { getEmDashCollection, getEntryTerms, getSiteSettings, getTaxonomyTerms } from "emdash";
+import { Image } from "emdash/ui";
+import Base from "../layouts/Base.astro";
+import EpisodeCard from "../components/EpisodeCard.astro";
+import PatreonBanner from "../components/PatreonBanner.astro";
+import { resolveBlogSiteIdentity } from "../utils/site-identity";
+
+const { entries: episodes, cacheHint } = await getEmDashCollection("episodes", {
+	orderBy: { published_at: "desc" },
+});
+const { siteTitle, siteTagline } = resolveBlogSiteIdentity(await getSiteSettings());
+
+Astro.cache.set(cacheHint);
+
+const sorted = episodes.toSorted((a, b) => {
+	const dateA = a.data.publishedAt?.getTime() ?? 0;
+	const dateB = b.data.publishedAt?.getTime() ?? 0;
+	return dateB - dateA;
+});
+
+// Hero: latest episode
+const heroEp = sorted[0];
+const gridEps = sorted.slice(1, 7);
+
+// Fetch topics for hero
+let heroTopics: Array<{ slug: string; label: string }> = [];
+if (heroEp) {
+	heroTopics = await getEntryTerms("episodes", heroEp.data.id, "topic");
+}
+
+// Fetch topics for grid episodes
+const gridEpsWithTopics = await Promise.all(
+	gridEps.map(async (ep) => {
+		const topics = await getEntryTerms("episodes", ep.data.id, "topic");
+		return { ep, topics };
+	})
+);
+
+// All topics for the topic strip
+const allTopics = await getTaxonomyTerms("topic");
+---
+
+<Base title={siteTitle} description={siteTagline}>
+	{episodes.length === 0 ? (
+		<section class="empty">
+			<h1>No episodes yet</h1>
+			<p>Add your first episode in the admin panel.</p>
+			<a href="/_emdash/admin/content/episodes/new" class="btn-fire">Create episode</a>
+		</section>
+	) : (
+		<>
+			{/* ── Hero ── */}
+			{heroEp && (
+				<section class="hero">
+					<div class="hero-inner">
+						{heroEp.data.cover_art && (
+							<a href={`/episodes/${heroEp.id}`} class="hero-image-link">
+								<div class="hero-image">
+									<Image image={heroEp.data.cover_art} />
+								</div>
+							</a>
+						)}
+						<div class="hero-content">
+							<div class="hero-meta">
+								{heroEp.data.episode_number != null && (
+									<span class="hero-ep-num">
+										EP. {String(heroEp.data.episode_number).padStart(3, "0")}
+									</span>
+								)}
+								{heroEp.data.season_number != null && (
+									<span class="hero-season">S{heroEp.data.season_number}</span>
+								)}
+								{heroTopics.length > 0 && (
+									<>
+										<span class="meta-divider">·</span>
+										<div class="hero-topics">
+											{heroTopics.slice(0, 2).map((t) => (
+												<a href={`/topic/${t.slug}`} class="hero-topic">{t.label}</a>
+											))}
+										</div>
+									</>
+								)}
+							</div>
+
+							<a href={`/episodes/${heroEp.id}`} class="hero-title-link">
+								<h1 class="hero-title">{heroEp.data.title}</h1>
+							</a>
+
+							{heroEp.data.excerpt && (
+								<p class="hero-excerpt">{heroEp.data.excerpt}</p>
+							)}
+
+							<div class="hero-actions">
+								<a href={`/episodes/${heroEp.id}`} class="btn-fire">
+									<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="5,3 19,12 5,21"/></svg>
+									Watch Now
+								</a>
+								{heroEp.data.audio_url && (
+									<a href={heroEp.data.audio_url} class="btn-outline">
+										<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+										Listen
+									</a>
+								)}
+								{!heroEp.data.audio_url && (
+									<a href={`/episodes/${heroEp.id}`} class="btn-outline">
+										<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+										Listen
+									</a>
+								)}
+							</div>
+						</div>
+					</div>
+				</section>
+			)}
+
+			{/* ── Patreon Banner ── */}
+			<PatreonBanner />
+
+			{/* ── Topic Strip ── */}
+			{allTopics.length > 0 && (
+				<section class="topic-strip-section">
+					<div class="topic-strip-inner">
+						<span class="topic-strip-label">Browse by topic</span>
+						<div class="topic-strip">
+							{allTopics.map((t) => (
+								<a href={`/topic/${t.slug}`} class="topic-pill">
+									{t.label}
+								</a>
+							))}
+						</div>
+					</div>
+				</section>
+			)}
+
+			{/* ── Latest Episodes Grid ── */}
+			{gridEpsWithTopics.length > 0 && (
+				<section class="episodes-section">
+					<div class="episodes-inner">
+						<header class="section-header">
+							<h2 class="section-title">Latest Episodes</h2>
+							{sorted.length > 7 && (
+								<a href="/episodes" class="section-link">
+									All episodes →
+								</a>
+							)}
+						</header>
+						<div class="episodes-grid">
+							{gridEpsWithTopics.map(({ ep, topics }) => (
+								<EpisodeCard
+									title={ep.data.title}
+									excerpt={ep.data.excerpt}
+									coverArt={ep.data.cover_art}
+									href={`/episodes/${ep.id}`}
+									date={ep.data.publishedAt ?? undefined}
+									episodeNumber={ep.data.episode_number}
+									seasonNumber={ep.data.season_number}
+									duration={ep.data.audio_duration}
+									topics={topics}
+								/>
+							))}
+						</div>
+					</div>
+				</section>
+			)}
+		</>
+	)}
+</Base>
+
+<style>
+	/* ── Empty ───────────────────────────── */
+	.empty {
+		text-align: center;
+		padding: var(--spacing-24) var(--spacing-6);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: var(--spacing-4);
+	}
+
+	.empty h1 {
+		font-size: var(--font-size-3xl);
+		color: var(--color-text);
+	}
+
+	.empty p { color: var(--color-muted); }
+
+	/* ── Hero ────────────────────────────── */
+	.hero {
+		background: var(--color-bg-subtle);
+		border-bottom: 1px solid var(--color-border-subtle);
+	}
+
+	.hero-inner {
+		max-width: var(--wide-width);
+		margin: 0 auto;
+		padding: var(--spacing-16) var(--spacing-6);
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: var(--spacing-12);
+		align-items: center;
+	}
+
+	.hero-image-link { display: block; }
+
+	.hero-image {
+		border-radius: var(--radius-xl);
+		overflow: hidden;
+		background: var(--color-surface);
+		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+	}
+
+	.hero-image img {
+		width: 100%;
+		height: auto;
+		aspect-ratio: 16 / 9;
+		object-fit: cover;
+		transition: transform 0.5s ease;
+	}
+
+	.hero-image-link:hover .hero-image img { transform: scale(1.02); }
+
+	.hero-content {
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-4);
+	}
+
+	.hero-meta {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: var(--spacing-3);
+		font-size: var(--font-size-sm);
+	}
+
+	.hero-ep-num {
+		font-family: var(--font-heading);
+		font-size: 1rem;
+		letter-spacing: 0.1em;
+		background: var(--gradient-fire);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
+	}
+
+	.hero-season {
+		font-size: var(--font-size-xs);
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: var(--tracking-wide);
+		color: var(--color-muted);
+	}
+
+	.meta-divider { color: var(--color-border); }
+
+	.hero-topics {
+		display: flex;
+		gap: var(--spacing-2);
+	}
+
+	.hero-topic {
+		font-size: var(--font-size-xs);
+		font-weight: 500;
+		text-transform: uppercase;
+		letter-spacing: var(--tracking-wide);
+		color: var(--color-text-secondary);
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		padding: 2px 8px;
+		text-decoration: none;
+		transition: color var(--transition-fast), border-color var(--transition-fast);
+	}
+
+	.hero-topic:hover {
+		color: var(--color-accent);
+		border-color: var(--color-accent);
+	}
+
+	.hero-title-link {
+		text-decoration: none;
+		color: inherit;
+	}
+
+	.hero-title {
+		font-family: var(--font-heading);
+		font-size: clamp(2rem, 5vw, 3.5rem);
+		font-weight: 400;
+		text-transform: uppercase;
+		letter-spacing: 0.02em;
+		line-height: var(--leading-tight);
+		transition: color var(--transition-fast);
+	}
+
+	.hero-title-link:hover .hero-title { color: var(--color-accent); }
+
+	.hero-excerpt {
+		font-size: var(--font-size-lg);
+		line-height: var(--leading-relaxed);
+		color: var(--color-text-secondary);
+	}
+
+	.hero-actions {
+		display: flex;
+		gap: var(--spacing-3);
+		flex-wrap: wrap;
+		margin-top: var(--spacing-2);
+	}
+
+	/* ── Buttons ─────────────────────────── */
+	.btn-fire {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--spacing-2);
+		padding: var(--spacing-3) var(--spacing-6);
+		font-size: var(--font-size-sm);
+		font-weight: 700;
+		color: #fff;
+		background: var(--gradient-fire);
+		border-radius: var(--radius-lg);
+		text-decoration: none;
+		box-shadow: var(--shadow-glow);
+		transition: box-shadow var(--transition-base), transform var(--transition-fast);
+		letter-spacing: 0.02em;
+	}
+
+	.btn-fire:hover {
+		box-shadow: var(--shadow-glow-strong);
+		transform: translateY(-2px);
+		color: #fff;
+	}
+
+	.btn-outline {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--spacing-2);
+		padding: var(--spacing-3) var(--spacing-6);
+		font-size: var(--font-size-sm);
+		font-weight: 600;
+		color: var(--color-text);
+		border: 1.5px solid var(--color-border);
+		border-radius: var(--radius-lg);
+		text-decoration: none;
+		transition: border-color var(--transition-fast), color var(--transition-fast);
+	}
+
+	.btn-outline:hover {
+		border-color: var(--color-accent);
+		color: var(--color-accent);
+	}
+
+	/* ── Topic Strip ─────────────────────── */
+	.topic-strip-section {
+		border-bottom: 1px solid var(--color-border-subtle);
+		padding: var(--spacing-4) 0;
+		overflow: hidden;
+	}
+
+	.topic-strip-inner {
+		max-width: var(--wide-width);
+		margin: 0 auto;
+		padding: 0 var(--spacing-6);
+		display: flex;
+		align-items: center;
+		gap: var(--spacing-4);
+	}
+
+	.topic-strip-label {
+		font-size: var(--font-size-xs);
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: var(--tracking-wider);
+		color: var(--color-muted);
+		white-space: nowrap;
+		flex-shrink: 0;
+	}
+
+	.topic-strip {
+		display: flex;
+		gap: var(--spacing-2);
+		overflow-x: auto;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.topic-strip::-webkit-scrollbar { display: none; }
+
+	.topic-pill {
+		display: inline-block;
+		padding: 5px var(--spacing-4);
+		font-size: var(--font-size-xs);
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: var(--tracking-wide);
+		color: var(--color-text-secondary);
+		border: 1px solid var(--color-border);
+		border-radius: 999px;
+		text-decoration: none;
+		white-space: nowrap;
+		transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+	}
+
+	.topic-pill:hover {
+		color: var(--color-accent);
+		border-color: var(--color-accent);
+		background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+	}
+
+	/* ── Episodes Grid ───────────────────── */
+	.episodes-section {
+		padding: var(--spacing-16) 0;
+	}
+
+	.episodes-inner {
+		max-width: var(--wide-width);
+		margin: 0 auto;
+		padding: 0 var(--spacing-6);
+	}
+
+	.section-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+		margin-bottom: var(--spacing-10);
+		padding-bottom: var(--spacing-4);
+		border-bottom: 1px solid var(--color-border-subtle);
+	}
+
+	.section-title {
+		font-family: var(--font-heading);
+		font-size: 1.6rem;
+		font-weight: 400;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: var(--color-text);
+	}
+
+	.section-link {
+		font-size: var(--font-size-sm);
+		font-weight: 600;
+		color: var(--color-accent);
+		text-decoration: none;
+		transition: color var(--transition-fast);
+	}
+
+	.section-link:hover { color: var(--color-accent-hover); }
+
+	.episodes-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: var(--spacing-12) var(--spacing-8);
+	}
+
+	/* ── Responsive ──────────────────────── */
+	@media (max-width: 900px) {
+		.hero-inner {
+			grid-template-columns: 1fr;
+			padding: var(--spacing-8) var(--spacing-4);
+		}
+		.hero-title { font-size: clamp(1.8rem, 6vw, 2.5rem); }
+		.episodes-grid { grid-template-columns: repeat(2, 1fr); }
+	}
+
+	@media (max-width: 600px) {
+		.hero-inner { gap: var(--spacing-6); }
+		.hero-actions { flex-direction: column; }
+		.btn-fire, .btn-outline { justify-content: center; }
+		.episodes-grid { grid-template-columns: 1fr; }
+	}
+</style>
