@@ -9,22 +9,20 @@
 			"binding": "DB",
 			"database_name": "burn-it-down",
 			// Run `wrangler d1 create my-emdash-site` and paste the real ID here for deploy
-			"database_id": "436276ee-7652-4f9c-b9d9-f3ca7732d2b9",
-		},
+			"database_id": "436276ee-7652-4f9c-b9d9-f3ca7732d2b9"
+		}
 	],
 	"r2_buckets": [
 		{
 			"binding": "MEDIA",
-			"bucket_name": "the-matches",
-		},
+			"bucket_name": "the-matches"
+		}
 	],
   "observability": {
 	"logs": {
 	  "enabled": true,
 	  "invocation_logs": true
 	},
-	"traces": {
-	  "enabled": true
+	"traces": {}
   }
-
 }
